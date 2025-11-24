@@ -1,88 +1,112 @@
 package ru.yandex.practicum.filmorate;
 
-import org.junit.jupiter.api.Test;
+import jakarta.validation.ConstraintViolation;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.time.LocalDate;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class UserTest {
 
+    private LocalValidatorFactoryBean validator;
     private User user;
 
     @BeforeEach
     void setUp() {
+        validator = new LocalValidatorFactoryBean();
+        validator.afterPropertiesSet();
+
         user = new User();
         user.setId(1);
         user.setLogin("testuser");
+        user.setBirthday(LocalDate.of(1990, 1, 1));
     }
 
     @Test
-    void testValidEmail() {
+    void testValidUser() {
         user.setEmail("user@test.com");
-        assertEquals("user@test.com", user.getEmail());
+        user.setName("User Name");
+
+        Set<ConstraintViolation<User>> violations = validator.validate(user);
+        assertTrue(violations.isEmpty());
     }
 
     @Test
-    void testEmptyEmail() {
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> user.setEmail(""));
-        assertTrue(exception.getMessage().contains("Электронная почта не может быть пустой"));
+    void testEmailIsNull() {
+        user.setEmail(null);
+
+        Set<ConstraintViolation<User>> violations = validator.validate(user);
+        assertEquals(1, violations.size());
+        assertTrue(violations.iterator().next().getMessage().contains("Электронная почта не может быть пустой"));
     }
 
     @Test
-    void testNullEmail() {
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> user.setEmail(null));
-        assertTrue(exception.getMessage().contains("Электронная почта не может быть пустой"));
+    void testEmailIsEmpty() {
+        user.setEmail("");
+
+        Set<ConstraintViolation<User>> violations = validator.validate(user);
+        assertEquals(1, violations.size());
+        assertTrue(violations.iterator().next().getMessage().contains("Электронная почта не может быть пустой"));
     }
 
     @Test
     void testEmailWithoutAt() {
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> user.setEmail("invalid-email"));
-        assertTrue(exception.getMessage().contains("Электронная почта не может быть пустой и должна содержать символ '@'"));
+        user.setEmail("invalid-email");
+
+        Set<ConstraintViolation<User>> violations = validator.validate(user);
+        assertEquals(1, violations.size());
+        assertTrue(violations.iterator().next().getMessage().contains("символ '@'"));
     }
 
     @Test
-    void testValidLogin() {
-        user.setLogin("validlogin");
-        assertEquals("validlogin", user.getLogin());
+    void testLoginIsNull() {
+        user.setLogin(null);
+
+        Set<ConstraintViolation<User>> violations = validator.validate(user);
+
+        assertTrue(hasViolation(violations, "login", "пустым"),
+                "Ожидалась ошибка валидации: логин не может быть пустым");
     }
 
     @Test
-    void testEmptyLogin() {
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> user.setLogin(""));
-        assertTrue(exception.getMessage().contains("Логин не может быть пустым"));
+    void testLoginIsEmpty() {
+        user.setLogin("");
+
+        Set<ConstraintViolation<User>> violations = validator.validate(user);
+
+        assertTrue(hasViolation(violations, "login", "пустым"),
+                "Ожидалась ошибка валидации: логин не может быть пустым");
     }
 
     @Test
     void testLoginWithSpaces() {
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> user.setLogin("invalid login"));
-        assertTrue(exception.getMessage().contains("Логин не может быть пустым и содержать пробелы"));
+        user.setLogin("invalid login");
+
+        Set<ConstraintViolation<User>> violations = validator.validate(user);
+
+        assertTrue(hasViolation(violations, "login", "пробелы"),
+                "Ожидалась ошибка валидации: логин не может содержать пробелы");
+    }
+
+    // Вспомогательный метод
+    private boolean hasViolation(Set<ConstraintViolation<User>> violations, String field, String messagePart) {
+        return violations.stream()
+                .anyMatch(v -> field.equals(v.getPropertyPath().toString()) &&
+                        v.getMessage().contains(messagePart));
     }
 
     @Test
-    void testNameIsNullUsesLogin() {
-        user.setName(null);
-        assertEquals("testuser", user.getName());
-    }
+    void testBirthdayInFuture() {
+        user.setBirthday(LocalDate.now().plusDays(1));
 
-    @Test
-    void testNameIsBlankUsesLogin() {
-        user.setName("   ");
-        assertEquals("testuser", user.getName());
-    }
+        Set<ConstraintViolation<User>> violations = validator.validate(user);
 
-    @Test
-    void testValidBirthday() {
-        user.setBirthday(LocalDate.of(1990, 1, 1));
-        assertEquals(LocalDate.of(1990, 1, 1), user.getBirthday());
-    }
-
-    @Test
-    void testFutureBirthdayFails() {
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> user.setBirthday(LocalDate.now().plusDays(1)));
-        assertTrue(exception.getMessage().contains("Дата рождения не может быть в будущем"));
+        assertTrue(hasViolation(violations, "birthday", "будущем"),
+                "Ожидалась ошибка валидации: дата рождения не может быть в будущем");
     }
 }

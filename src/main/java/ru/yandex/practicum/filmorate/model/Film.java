@@ -27,7 +27,7 @@ public class Film {
     // Валидация даты релиза — должна быть не раньше 28 декабря 1895 года
     public void setReleaseDate(LocalDate releaseDate) {
         LocalDate earliestDate = LocalDate.of(1895, 12, 28);
-        if (releaseDate == null || releaseDate.isBefore(earliestDate)) {
+        if (releaseDate != null && releaseDate.isBefore(earliestDate)) {
             throw new IllegalArgumentException("Дата релиза не может быть раньше 28 декабря 1895 года.");
         }
         this.releaseDate = releaseDate;
