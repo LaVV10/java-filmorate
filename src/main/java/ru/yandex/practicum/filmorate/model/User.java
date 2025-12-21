@@ -8,8 +8,8 @@ import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 
 import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
 
 @Data
 public class User {
@@ -28,10 +28,15 @@ public class User {
     @PastOrPresent(message = "Дата рождения не может быть в будущем.")
     private LocalDate birthday;
 
-    @JsonIgnore
-    private final Set<Integer> friends = new HashSet<>();
-
     public void setName(String name) {
         this.name = (name == null || name.isBlank()) ? login : name;
+    }
+
+    @JsonIgnore
+    private final Map<Integer, FriendshipStatus> friendStatuses = new HashMap<>();
+
+    public enum FriendshipStatus {
+        UNCONFIRMED,  // запрос отправлен, но получатель ещё не подтвердил
+        CONFIRMED     // дружба подтверждена (взаимная)
     }
 }

@@ -30,6 +30,9 @@ public class Film {
     @JsonIgnore
     private final Set<Integer> likes = new HashSet<>();
 
+    private MPA mpa;
+    private Set<Genre> genres = new HashSet<>();
+
     public void setReleaseDate(LocalDate releaseDate) {
         LocalDate earliestDate = LocalDate.of(1895, 12, 28);
         if (releaseDate != null && releaseDate.isBefore(earliestDate)) {
