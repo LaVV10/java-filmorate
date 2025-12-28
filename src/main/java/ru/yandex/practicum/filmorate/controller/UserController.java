@@ -43,8 +43,14 @@ public class UserController {
 
     @PutMapping("/{id}/friends/{friendId}")
     public void addFriend(@PathVariable int id, @PathVariable int friendId) {
-        log.info("Пользователь с id {} добавляет в друзья пользователя с id {}", id, friendId);
-        userService.addFriend(id, friendId);
+        log.info("Запрос на добавление в друзья: {} -> {}", id, friendId);
+        try {
+            userService.addFriend(id, friendId);
+            log.info("Друг успешно добавлен");
+        } catch (Exception e) {
+            log.error("Ошибка при добавлении в друзья", e);
+            throw e;
+        }
     }
 
     @DeleteMapping("/{id}/friends/{friendId}")
