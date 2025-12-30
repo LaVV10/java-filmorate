@@ -17,7 +17,7 @@ import java.util.List;
 @Component
 @Slf4j
 @Primary
-@Qualifier("mpaDbStorage")
+@Qualifier
 public class MPADbStorage {
 
     private final JdbcTemplate jdbcTemplate;

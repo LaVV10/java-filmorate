@@ -14,7 +14,7 @@ import java.util.List;
 
 @Component
 @Primary
-@Qualifier("genreDbStorage")
+@Qualifier
 public class GenreDbStorage {
 
     private final JdbcTemplate jdbcTemplate;
