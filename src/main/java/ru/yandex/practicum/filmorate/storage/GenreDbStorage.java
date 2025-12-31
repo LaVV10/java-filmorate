@@ -1,6 +1,5 @@
 package ru.yandex.practicum.filmorate.storage;
 
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Component;
@@ -12,7 +11,6 @@ import java.sql.SQLException;
 import java.util.List;
 
 @Component
-@Qualifier
 public class GenreDbStorage {
 
     private final JdbcTemplate jdbcTemplate;

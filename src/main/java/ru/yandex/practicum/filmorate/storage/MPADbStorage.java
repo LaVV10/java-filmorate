@@ -1,6 +1,5 @@
 package ru.yandex.practicum.filmorate.storage;
 
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -15,7 +14,6 @@ import java.util.List;
 
 @Component
 @Slf4j
-@Qualifier
 public class MPADbStorage {
 
     private final JdbcTemplate jdbcTemplate;
