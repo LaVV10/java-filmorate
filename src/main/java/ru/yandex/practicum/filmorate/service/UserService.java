@@ -2,16 +2,18 @@ package ru.yandex.practicum.filmorate.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional
 public class UserService {
     private final UserStorage userStorage;
 
@@ -43,41 +45,43 @@ public class UserService {
         return user;
     }
 
+    @Transactional
     public void addFriend(int userId, int friendId) {
-        User user = getUserOrThrow(userId);
-        User friend = getUserOrThrow(friendId);
-
-        user.getFriends().add(friendId);
-        friend.getFriends().add(userId);
+        getUserOrThrow(userId);
+        getUserOrThrow(friendId);
+        userStorage.addFriend(userId, friendId);
     }
 
     public void removeFriend(int userId, int friendId) {
-        User user = getUserOrThrow(userId);
-        User friend = getUserOrThrow(friendId);
+        getUserOrThrow(userId);
+        getUserOrThrow(friendId);
 
-        user.getFriends().remove(friendId);
-        friend.getFriends().remove(userId);
+        List<Integer> friends = userStorage.getUserFriends(userId);
+        if (!friends.contains(friendId)) {
+            return;
+        }
+
+        userStorage.removeFriend(userId, friendId);
+    }
+
+    public List<Integer> getFriendsIds(int userId) {
+        getUserOrThrow(userId);
+        return userStorage.getUserFriends(userId);
     }
 
     public List<User> getFriends(int userId) {
-        User user = getUserOrThrow(userId);
-        return user.getFriends().stream()
+        getUserOrThrow(userId);
+        List<Integer> friendIds = userStorage.getUserFriends(userId);
+        return friendIds.stream()
                 .map(userStorage::getUserById)
-                .filter(java.util.Objects::nonNull)
+                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
 
     public List<User> getCommonFriends(int userId, int otherId) {
-        User user = getUserOrThrow(userId);
-        User other = getUserOrThrow(otherId);
-
-        Set<Integer> commonIds = user.getFriends();
-        commonIds.retainAll(other.getFriends());
-
-        return commonIds.stream()
-                .map(userStorage::getUserById)
-                .filter(java.util.Objects::nonNull)
-                .collect(Collectors.toList());
+        getUserOrThrow(userId);
+        getUserOrThrow(otherId);
+        return userStorage.getCommonFriends(userId, otherId);
     }
 
     private User getUserOrThrow(int id) {

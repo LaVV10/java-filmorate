@@ -5,6 +5,8 @@ import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.storage.FilmStorage;
+import ru.yandex.practicum.filmorate.storage.GenreDbStorage;
+import ru.yandex.practicum.filmorate.storage.MPADbStorage;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
 
 import java.util.ArrayList;
@@ -16,18 +18,26 @@ import java.util.stream.Collectors;
 public class FilmService {
     private final FilmStorage filmStorage;
     private final UserStorage userStorage;
+    private final GenreDbStorage genreDbStorage;
+    private final MPADbStorage mpaDbStorage; // Добавлено
 
     @Autowired
-    public FilmService(FilmStorage filmStorage, UserStorage userStorage) {
+    public FilmService(FilmStorage filmStorage, UserStorage userStorage, GenreDbStorage genreDbStorage, MPADbStorage mpaDbStorage) {
         this.filmStorage = filmStorage;
         this.userStorage = userStorage;
+        this.genreDbStorage = genreDbStorage;
+        this.mpaDbStorage = mpaDbStorage; // Инициализация
     }
 
     public Film createFilm(Film film) {
+        validateMpa(film);
+        film.setGenreDbStorage(genreDbStorage);
         return filmStorage.createFilm(film);
     }
 
     public Film updateFilm(Film film) {
+        validateMpa(film);
+        film.setGenreDbStorage(genreDbStorage);
         if (filmStorage.getFilmById(film.getId()) == null) {
             throw new NotFoundException("Фильм с id " + film.getId() + " не найден.");
         }
@@ -35,7 +45,9 @@ public class FilmService {
     }
 
     public List<Film> getAllFilms() {
-        return new ArrayList<>(filmStorage.getAllFilms());
+        List<Film> films = new ArrayList<>(filmStorage.getAllFilms());
+        films.forEach(film -> film.setGenreDbStorage(genreDbStorage));
+        return films;
     }
 
     public Film getFilmById(int id) {
@@ -43,6 +55,7 @@ public class FilmService {
         if (film == null) {
             throw new NotFoundException("Фильм с id " + id + " не найден.");
         }
+        film.setGenreDbStorage(genreDbStorage);
         return film;
     }
 
@@ -51,9 +64,9 @@ public class FilmService {
         if (userStorage.getUserById(userId) == null) {
             throw new NotFoundException("Пользователь с id " + userId + " не найден.");
         }
-        if (film.getLikes().contains(userId)) {
-            throw new IllegalArgumentException("Пользователь с id " + userId + " уже поставил лайк этому фильму.");
-        }
+        // Сначала в БД
+        filmStorage.addLike(filmId, userId);
+        // Потом обновляем объект
         film.getLikes().add(userId);
     }
 
@@ -62,9 +75,9 @@ public class FilmService {
         if (userStorage.getUserById(userId) == null) {
             throw new NotFoundException("Пользователь с id " + userId + " не найден.");
         }
-        if (!film.getLikes().contains(userId)) {
-            throw new NotFoundException("Пользователь с id " + userId + " не ставил лайк фильму с id " + filmId + ".");
-        }
+        // Сначала в БД
+        filmStorage.removeLike(filmId, userId);
+        // Потом обновляем объект
         film.getLikes().remove(userId);
     }
 
@@ -81,5 +94,14 @@ public class FilmService {
             throw new NotFoundException("Фильм с id " + id + " не найден.");
         }
         return film;
+    }
+
+    private void validateMpa(Film film) {
+        if (film.getMpa() == null || film.getMpa().getId() == null) {
+            throw new IllegalArgumentException("MPA и его id не могут быть null.");
+        }
+        if (mpaDbStorage.getMPAById(film.getMpa().getId()) == null) {
+            throw new NotFoundException("MPA с id " + film.getMpa().getId() + " не найден.");
+        }
     }
 }
